@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tactile Systematic — Movie Taste Search</title>
+  <meta name="description" content="Select your genres, set your era, and discover movies scored by the Tactile Systematic algorithm.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+  <style>
+    /* ─── Base & Reset ─── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #09090b; color: #fafafa; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+    /* ─── Background Effects ─── */
+    .bg-base { position: fixed; inset: 0; background: linear-gradient(to bottom right, #09090b, #18181b, #09090b); z-index: -20; pointer-events: none; }
+    .bg-amber-glow { position: fixed; inset: 0; background: radial-gradient(ellipse at top, rgba(245,158,11,0.05) 0%, transparent 60%); z-index: -10; pointer-events: none; }
+
+    /* ─── Header ─── */
+    .app-header { background: rgba(9,9,11,0.8); backdrop-filter: blur(24px); border-bottom: 1px solid rgba(39,39,42,0.8); position: sticky; top: 0; z-index: 50; }
+    .logo-text { background: linear-gradient(135deg, #f59e0b, #fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* ─── Tab Navigation ─── */
+    .tab-btn { padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; transition: all 0.25s ease; cursor: pointer; border: none; outline: none; }
+    .tab-active { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .tab-inactive { background: transparent; color: #71717a; border: 1px solid transparent; }
+    .tab-inactive:hover { color: #a1a1aa; background: rgba(245,158,11,0.05); }
+
+    /* ─── Panels ─── */
+    .tab-panel { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── Cards ─── */
+    .movie-card { background: rgba(39,39,42,0.5); border: 1px solid rgba(63,63,70,0.5); border-radius: 0.75rem; overflow: hidden; transition: all 0.3s ease; backdrop-filter: blur(4px); }
+    .movie-card:hover { border-color: rgba(245,158,11,0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(245,158,11,0.1); transform: translateY(-2px); }
+
+    /* ─── Genre Sliders ─── */
+    .genre-slider-row { padding: 0.5rem 0.75rem; border-radius: 0.5rem; transition: all 0.2s ease; }
+    .genre-slider-row:hover { background: rgba(245,158,11,0.03); }
+    .genre-off { opacity: 0.5; }
+    .genre-toggle { position: relative; transition: background 0.3s ease; }
+    .genre-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.3s ease; }
+    .genre-switch:checked + .genre-toggle { background: #10b981 !important; }
+    .genre-switch:checked + .genre-toggle::after { transform: translateX(16px); }
+
+    /* ─── Range Sliders ─── */
+    input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: linear-gradient(to right, #27272a, #3f3f46); outline: none; transition: opacity 0.2s; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #f59e0b; cursor: pointer; border: 2px solid #fbbf24; box-shadow: 0 0 8px rgba(245,158,11,0.3); transition: all 0.15s ease; }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 0 12px rgba(245,158,11,0.5); }
+    input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #f59e0b; cursor: pointer; border: 2px solid #fbbf24; box-shadow: 0 0 8px rgba(245,158,11,0.3); }
+    .calc-range { background: linear-gradient(to right, #27272a, #3f3f46) !important; }
+    .calc-range::-webkit-slider-thumb { background: #f59e0b; border-color: #fbbf24; box-shadow: 0 0 8px rgba(245,158,11,0.3); }
+    .calc-range::-moz-range-thumb { background: #f59e0b; border-color: #fbbf24; box-shadow: 0 0 8px rgba(245,158,11,0.3); }
+
+    /* ─── Modal ─── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-content { background: #18181b; border: 1px solid rgba(63,63,70,0.5); border-radius: 1rem; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 80px rgba(0,0,0,0.5); }
+    .modal-content::-webkit-scrollbar { width: 6px; }
+    .modal-content::-webkit-scrollbar-track { background: transparent; }
+    .modal-content::-webkit-scrollbar-thumb { background: rgba(113,113,122,0.3); border-radius: 2px; }
+    .modal-content::-webkit-scrollbar-thumb:hover { background: rgba(113,113,122,0.5); }
+
+    /* ─── Buttons ─── */
+    .btn-primary { background: rgba(245,158,11,0.15); color: #f59e0b; padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; border: 1px solid rgba(245,158,11,0.25); cursor: pointer; transition: all 0.2s ease; }
+    .btn-primary:hover { background: rgba(245,158,11,0.25); border-color: rgba(245,158,11,0.4); }
+    .btn-secondary { background: rgba(39,39,42,0.5); color: #a1a1aa; padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; border: 1px solid rgba(63,63,70,0.3); cursor: pointer; transition: all 0.2s ease; }
+    .btn-secondary:hover { background: rgba(63,63,70,0.5); color: #fafafa; border-color: rgba(63,63,70,0.5); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: rgba(113,113,122,0.25); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(113,113,122,0.4); }
+
+    /* ─── Animations ─── */
+    @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.08); } 50% { box-shadow: 0 0 30px rgba(245,158,11,0.15); } }
+    .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin-slow { animation: spin 1.5s linear infinite; }
+
+    /* ─── Utility ─── */
+    .glass { background: rgba(39,39,42,0.5); backdrop-filter: blur(4px); border: 1px solid rgba(63,63,70,0.5); }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(113,113,122,0.3); border-radius: 2px; }
+    .movie-poster-fallback { background: linear-gradient(to bottom right, #27272a, #18181b); }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+      .movie-poster { height: 200px !important; }
+      .modal-content { margin: 0.5rem; max-height: 95vh; }
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 font-sans">
+  <div class="bg-base"></div>
+  <div class="bg-amber-glow"></div>
+
+  <!-- ═══════ HEADER ═══════ -->
+  <header class="app-header relative z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 text-sm">🎬</div>
+        <div>
+          <h1 class="logo-text text-sm sm:text-base font-bold leading-tight">Tactile Systematic</h1>
+          <p class="text-[10px] text-zinc-500 font-medium tracking-wider uppercase">Movie Taste Search</p>
+        </div>
+      </div>
+      <!-- Desktop Nav -->
+      <nav id="tab-nav-desktop" class="hidden sm:flex bg-zinc-900/50 rounded-lg p-1 border border-zinc-800/50 gap-1">
+        <button data-tab="search" class="tab-btn tab-active text-xs">🎛️ Search</button>
+        <button data-tab="scored" class="tab-btn tab-inactive text-xs">💾 My Scores</button>
+        <button data-tab="taste" class="tab-btn tab-inactive text-xs">🎯 Taste</button>
+        <button data-tab="calculator" class="tab-btn tab-inactive text-xs">⚙️ Calculator</button>
+      </nav>
+      <!-- Mobile Nav -->
+      <nav id="tab-nav-mobile" class="flex sm:hidden gap-1">
+        <button data-tab="search" class="tab-btn tab-active text-xs px-2">🎛️</button>
+        <button data-tab="scored" class="tab-btn tab-inactive text-xs px-2">💾</button>
+        <button data-tab="taste" class="tab-btn tab-inactive text-xs px-2">🎯</button>
+        <button data-tab="calculator" class="tab-btn tab-inactive text-xs px-2">⚙️</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══════ MAIN ═══════ -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 relative z-10">
+
+    <!-- ───────────── TAB 1: SEARCH ───────────── -->
+    <div id="tab-search" class="tab-panel">
+
+      <!-- Genre Sliders Panel -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Main Genres -->
+        <div class="glass rounded-xl p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Main Genres</h2>
+            <span class="text-xs text-zinc-600">Toggle ON to include</span>
+          </div>
+          <div id="main-genres" class="space-y-0.5"></div>
+        </div>
+        <!-- Sub-Genres -->
+        <div class="glass rounded-xl p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Sub-Genres</h2>
+            <span class="text-xs text-zinc-600">Narrow your search</span>
+          </div>
+          <div id="sub-genres" class="space-y-0.5"></div>
+        </div>
+      </div>
+
+      <!-- Controls Row -->
+      <div class="glass rounded-xl p-4 sm:p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+
+          <!-- Year Range -->
+          <div class="md:col-span-1">
+            <label class="text-xs text-zinc-400 font-medium uppercase tracking-wider block mb-2">Year Range</label>
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-zinc-500">From</span>
+                  <span id="year-min-val" class="font-mono text-amber-400">1970</span>
+                </div>
+                <input type="range" id="year-min" min="1920" max="2026" value="1970" class="w-full">
+              </div>
+              <span class="text-zinc-600 text-xs">→</span>
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-zinc-500">To</span>
+                  <span id="year-max-val" class="font-mono text-amber-400">2026</span>
+                </div>
+                <input type="range" id="year-max" min="1920" max="2026" value="2026" class="w-full">
+              </div>
+            </div>
+          </div>
+
+          <!-- Result Count -->
+          <div>
+            <label class="text-xs text-zinc-400 font-medium uppercase tracking-wider block mb-2">How Many Results</label>
+            <div class="flex items-center gap-3">
+              <input type="range" id="result-count" min="1" max="30" value="12" class="flex-1">
+              <span id="result-count-val" class="text-lg font-bold text-amber-400 font-mono w-8 text-center">12</span>
+            </div>
+          </div>
+
+          <!-- TMDB Key + Generate -->
+          <div class="space-y-2">
+            <input type="text" id="tmdb-key-input" placeholder="TMDB API Key (saved locally)"
+                   class="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 transition-all">
+            <button id="generate-btn" class="w-full py-3 bg-gradient-to-r from-amber-600/20 to-amber-500/20 text-amber-400 border border-amber-500/30 hover:from-amber-600/30 hover:to-amber-500/30 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2">
+              <span class="text-lg">🔍</span> Generate
+            </button>
+            <p class="text-center">
+              <span class="text-xs text-zinc-600" id="active-genre-count">0 active</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Area -->
+      <div id="results-area" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-zinc-100">Search Results</h2>
+          <span class="text-xs text-zinc-500" id="results-info"></span>
+        </div>
+        <div id="results-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────── TAB 2: MY SCORES ───────────── -->
+    <div id="tab-scored" class="tab-panel hidden">
+
+      <!-- Liked Movies -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-zinc-100">❤️ Liked Movies</h2>
+          <span class="text-xs text-zinc-500" id="liked-count">0 liked</span>
+        </div>
+        <div id="liked-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div class="col-span-full text-center py-8 text-zinc-600">
+            <p class="text-sm">No liked movies yet. Heart movies from search results.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- To Watch -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-zinc-100">➕ To Watch</h2>
+          <span class="text-xs text-zinc-500" id="watch-count">0 to watch</span>
+        </div>
+        <div id="watch-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div class="col-span-full text-center py-8 text-zinc-600">
+            <p class="text-sm">No watchlist yet. Add movies from search results.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scored Movies -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-zinc-100">📊 Scored Movies</h2>
+          <span class="text-xs text-zinc-500" id="scored-count">0 movies scored</span>
+        </div>
+
+        <!-- Grid view -->
+        <div id="scored-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+        </div>
+
+        <!-- List view -->
+        <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-3">Rankings</h3>
+        <div id="scored-list" class="space-y-2">
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────── TAB 3: TASTE ───────────── -->
+    <div id="tab-taste" class="tab-panel hidden">
+      <div id="taste-summary" class="mb-6"></div>
+      <div id="taste-empty" class="text-center py-16 text-zinc-500">
+        <div class="text-4xl mb-4">🎯</div>
+        <p class="text-lg">Score some movies to see your taste profile</p>
+        <p class="text-sm mt-2 text-zinc-600">Your taste radar and dimension breakdown will appear here.</p>
+      </div>
+      <div id="taste-charts-area" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">🕸️ Taste Radar</h3>
+            <div class="max-w-sm mx-auto"><canvas id="taste-radar"></canvas></div>
+          </div>
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">📊 Dimension Breakdown</h3>
+            <canvas id="taste-bar"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────── TAB 4: CALCULATOR ───────────── -->
+    <div id="tab-calculator" class="tab-panel hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass rounded-xl p-4 sm:p-6">
+          <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-2">⚙️ Score Calculator</h3>
+          <p class="text-xs text-zinc-500 mb-6">Drag sliders to see how each dimension contributes to the final score.</p>
+          <div class="space-y-4 mb-6" id="calc-sliders-area">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+        <div class="space-y-4">
+          <div class="rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-zinc-800/50 p-4 sm:p-6 text-center animate-pulse-glow">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Final Score</div>
+            <div id="calc-score"></div>
+          </div>
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Formula</div>
+            <div id="calc-formula"></div>
+          </div>
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Contributions</div>
+            <div id="calc-breakdown" class="space-y-1.5"></div>
+          </div>
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Algorithm</div>
+            <div class="text-xs text-zinc-400 space-y-2">
+              <p>The <strong class="text-zinc-200">Tactile Systematic</strong> algorithm evaluates films across 6 weighted dimensions, then applies 2 modifiers:</p>
+              <div class="bg-zinc-900/50 rounded-lg p-3 font-mono text-[11px] text-zinc-300 leading-relaxed">
+                <div>Raw = Σ(dim × weight)</div>
+                <div>Adjusted = Raw − min(Meta, 5)</div>
+                <div>Final = Adjusted × max(1−NC/100, 0.5)</div>
+              </div>
+              <p class="text-zinc-500 mt-2"><strong>Tiers:</strong> ≥9.0 Brilliant · ≥7.0 Great · ≥5.0 Watchable · ≥4.0 Low Watchable · &lt;4.0 Discard</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══════ SCORE MODAL ═══════ -->
+  <div id="score-modal" class="modal-overlay hidden" onclick="if(event.target===this)App.closeScoreModal()">
+    <div class="modal-content w-full max-w-lg p-4 sm:p-6">
+      <div class="flex justify-between items-start mb-2">
+        <h2 class="text-sm font-semibold text-zinc-500 uppercase tracking-wider">Score Movie</h2>
+        <button onclick="App.closeScoreModal()" class="text-zinc-400 hover:text-white text-xl transition-colors">✕</button>
+      </div>
+      <div id="score-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="relative z-10 border-t border-zinc-800/50 mt-12 bg-zinc-950/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center">
+      <p class="text-xs text-zinc-600">Tactile Systematic Reviews — Genre slider search powered by TMDB · All data saved locally in your browser</p>
+    </div>
+  </footer>
+
+  <!-- ═══════ ALL INLINE JAVASCRIPT ═══════ -->
+  <script>
+  // ═══════════════════════════════════════════════════════════
+  // SCORING ENGINE
+  // ═══════════════════════════════════════════════════════════
+  const ScoringEngine = {
+    weights: {
+      tactileIndex: 0.25,
+      systematicLogic: 0.20,
+      competencePorn: 0.15,
+      dialogueUtility: 0.15,
+      momentumVelocity: 0.15,
+      industrialGrit: 0.10
+    },
+    dimensions: {
+      tactileIndex:    { name: 'Tactile Index',    shortName: 'Tactility',  description: 'The physical, tangible feeling of the film.',      weight: 0.25, color: '#ef4444' },
+      systematicLogic: { name: 'Systematic Logic',  shortName: 'Logic',      description: 'Internal logical consistency and coherence.',       weight: 0.20, color: '#f97316' },
+      competencePorn:  { name: 'Competence Porn',   shortName: 'Competence',  description: 'The joy of watching skilled people do skilled things.', weight: 0.15, color: '#eab308' },
+      dialogueUtility: { name: 'Dialogue Utility',   shortName: 'Dialogue',   description: 'Every line earns its place.',                     weight: 0.15, color: '#22c55e' },
+      momentumVelocity:{ name: 'Momentum Velocity',  shortName: 'Momentum',   description: 'Pacing that pulls you forward.',                  weight: 0.15, color: '#3b82f6' },
+      industrialGrit:  { name: 'Industrial Grit',    shortName: 'Grit',       description: 'Raw, unpolished authenticity.',                   weight: 0.10, color: '#8b5cf6' }
+    },
+    specialDimensions: {
+      metaPenalty: { name: 'Meta Penalty', shortName: 'Meta', max: 5, color: '#ec4899' },
+      nihilismCap: { name: 'Nihilism Cap', shortName: 'Nihilism', max: 100, color: '#6b7280' }
+    },
+    calculateFinalScore(scores) {
+      const w = this.weights;
+      const raw = (
+        (scores.tactileIndex || 0) * w.tactileIndex +
+        (scores.systematicLogic || 0) * w.systematicLogic +
+        (scores.competencePorn || 0) * w.competencePorn +
+        (scores.dialogueUtility || 0) * w.dialogueUtility +
+        (scores.momentumVelocity || 0) * w.momentumVelocity +
+        (scores.industrialGrit || 0) * w.industrialGrit
+      );
+      const metaPenalty = Math.min(scores.metaPenalty || 0, 5);
+      const metaAdjusted = raw - metaPenalty;
+      const nihilismRaw = scores.nihilismCap || 0;
+      const nihilismFactor = Math.max(1 - nihilismRaw / 100, 0.5);
+      const nihilismCapped = metaAdjusted * nihilismFactor;
+      const final = Math.round(Math.max(0, nihilismCapped) * 10) / 10;
+      return {
+        final,
+        raw: Math.round(raw * 100) / 100,
+        metaAdjusted: Math.round(metaAdjusted * 100) / 100,
+        nihilismCapped: Math.round(nihilismCapped * 100) / 100,
+        metaPenalty: Math.round(metaPenalty * 100) / 100,
+        nihilismFactor: Math.round(nihilismFactor * 1000) / 1000,
+        breakdown: {
+          tactileContribution:    Math.round((scores.tactileIndex || 0) * w.tactileIndex * 100) / 100,
+          logicContribution:      Math.round((scores.systematicLogic || 0) * w.systematicLogic * 100) / 100,
+          competenceContribution: Math.round((scores.competencePorn || 0) * w.competencePorn * 100) / 100,
+          dialogueContribution:   Math.round((scores.dialogueUtility || 0) * w.dialogueUtility * 100) / 100,
+          momentumContribution:   Math.round((scores.momentumVelocity || 0) * w.momentumVelocity * 100) / 100,
+          gritContribution:       Math.round((scores.industrialGrit || 0) * w.industrialGrit * 100) / 100
+        }
+      };
+    },
+    getScoreTier(score) {
+      if (score >= 9.0) return { label: 'Brilliant',      color: '#fbbf24' };
+      if (score >= 7.0) return { label: 'Great',           color: '#22c55e' };
+      if (score >= 5.0) return { label: 'Watchable',       color: '#facc15' };
+      if (score >= 4.0) return { label: 'Low Watchable',   color: '#eab308' };
+      return                     { label: 'Discard',         color: '#ef4444' };
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // GENRE DATA
+  // ═══════════════════════════════════════════════════════════
+  const GenreData = {
+    genres: {
+      action:       { name: 'Action',        icon: '💥', group: 'main', tmdbId: 28 },
+      adventure:    { name: 'Adventure',     icon: '🗺️', group: 'main', tmdbId: 12 },
+      animation:    { name: 'Animation',     icon: '✨', group: 'main', tmdbId: 16 },
+      comedy:       { name: 'Comedy',        icon: '😂', group: 'main', tmdbId: 35 },
+      crime:        { name: 'Crime',         icon: '🔫', group: 'main', tmdbId: 80 },
+      documentary:  { name: 'Documentary',   icon: '📹', group: 'main', tmdbId: 99 },
+      drama:        { name: 'Drama',         icon: '🎭', group: 'main', tmdbId: 18 },
+      fantasy:      { name: 'Fantasy',       icon: '🧙', group: 'main', tmdbId: 14 },
+      horror:       { name: 'Horror',        icon: '👻', group: 'main', tmdbId: 27 },
+      mystery:      { name: 'Mystery',       icon: '🔍', group: 'main', tmdbId: 9648 },
+      romance:      { name: 'Romance',       icon: '❤️', group: 'main', tmdbId: 10749 },
+      scifi:        { name: 'Sci-Fi',        icon: '🚀', group: 'main', tmdbId: 878 },
+      thriller:     { name: 'Thriller',      icon: '😰', group: 'main', tmdbId: 53 },
+      war:          { name: 'War',           icon: '⚔️', group: 'main', tmdbId: 10752 },
+      // Sub-genres
+      slapstick:    { name: 'Slapstick',     icon: '🤡', group: 'sub', parent: 'comedy',   keyword: 'slapstick' },
+      satire:       { name: 'Satire',        icon: '🎤', group: 'sub', parent: 'comedy',   keyword: 'satire' },
+      darkcomedy:   { name: 'Dark Comedy',   icon: '💀', group: 'sub', parent: 'comedy',   keyword: 'dark comedy' },
+      noir:         { name: 'Film Noir',     icon: '🌑', group: 'sub', parent: 'thriller', keyword: 'film noir' },
+      cyberpunk:    { name: 'Cyberpunk',     icon: '🤖', group: 'sub', parent: 'scifi',    keyword: 'cyberpunk' },
+      psychological:{ name: 'Psychological',  icon: '🧠', group: 'sub', parent: 'horror',   keyword: 'psychological thriller' },
+      musical:      { name: 'Musical',       icon: '🎵', group: 'sub', parent: 'drama',    tmdbId: 10402 },
+      martialarts:  { name: 'Martial Arts',  icon: '🥋', group: 'sub', parent: 'action',   keyword: 'martial arts' },
+      western:      { name: 'Western',       icon: '🤠', group: 'sub', parent: 'adventure',tmdbId: 37 },
+      dystopian:    { name: 'Dystopian',     icon: '🏙️', group: 'sub', parent: 'scifi',    keyword: 'dystopia' },
+      procedural:   { name: 'Procedural',    icon: '📋', group: 'sub', parent: 'crime',    keyword: 'procedural' },
+      anime:        { name: 'Anime',         icon: '🎌', group: 'sub', parent: 'animation',keyword: 'anime' }
+    },
+    getMainGenres() {
+      return Object.entries(this.genres).filter(([, g]) => g.group === 'main').sort((a, b) => a[1].name.localeCompare(b[1].name));
+    },
+    getSubGenres() {
+      return Object.entries(this.genres).filter(([, g]) => g.group === 'sub').sort((a, b) => a[1].name.localeCompare(b[1].name));
+    },
+    getActiveTmdbGenreIds(genreWeights) {
+      const ids = [];
+      for (const [key, weight] of Object.entries(genreWeights)) {
+        if (weight <= 0) continue;
+        const genre = this.genres[key];
+        if (genre && genre.tmdbId && !ids.includes(genre.tmdbId)) ids.push(genre.tmdbId);
+      }
+      return ids;
+    },
+    getActiveKeywords(genreWeights) {
+      const keywords = [];
+      for (const [key, weight] of Object.entries(genreWeights)) {
+        if (weight <= 0) continue;
+        const genre = this.genres[key];
+        if (genre && genre.keyword) keywords.push(genre.keyword);
+      }
+      return keywords;
+    },
+    countActive(genreWeights) {
+      return Object.values(genreWeights).filter(w => w > 0).length;
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // APPLICATION
+  // ═══════════════════════════════════════════════════════════
+  const App = {
+    state: {
+      activeTab: 'search',
+      genreWeights: {},
+      yearRange: { min: 1970, max: 2026 },
+      resultCount: 12,
+      tmdbKey: '',
+      searchResults: [],
+      scoredMovies: [],
+      likedMovies: [],
+      watchMovies: [],
+      isGenerating: false,
+      currentSearchPage: 1,
+      totalResults: 0
+    },
+    charts: {},
+
+    // ─── Init ──────────────────────────────────────────────
+    init() {
+      this.loadState();
+      this.setupTabDelegation();
+      this.renderGenreSliders();
+      this.renderCalculatorSliders();
+      this.renderScoredTab();
+      this.renderLikedTab();
+      this.renderWatchTab();
+      this.setupControls();
+      this.switchTab('search');
+      console.log('Tactile Systematic initialized — single-file mode');
+    },
+
+    // ─── Persistence ──────────────────────────────────────
+    loadState() {
+      try {
+        const saved = localStorage.getItem('ts_state_v3');
+        if (saved) {
+          const p = JSON.parse(saved);
+          this.state.genreWeights = p.genreWeights || this.defaultGenreWeights();
+          this.state.yearRange = p.yearRange || { min: 1970, max: 2026 };
+          this.state.tmdbKey = p.tmdbKey || '';
+          this.state.scoredMovies = p.scoredMovies || [];
+          this.state.likedMovies = p.likedMovies || [];
+          this.state.watchMovies = p.watchMovies || [];
+          this.state.resultCount = p.resultCount || 12;
+        } else {
+          this.state.genreWeights = this.defaultGenreWeights();
+        }
+      } catch (e) {
+        this.state.genreWeights = this.defaultGenreWeights();
+      }
+    },
+
+    saveState() {
+      try {
+        localStorage.setItem('ts_state_v3', JSON.stringify({
+          genreWeights: this.state.genreWeights,
+          yearRange: this.state.yearRange,
+          tmdbKey: this.state.tmdbKey,
+          scoredMovies: this.state.scoredMovies,
+          likedMovies: this.state.likedMovies,
+          watchMovies: this.state.watchMovies,
+          resultCount: this.state.resultCount
+        }));
+      } catch (e) {
+        console.error('Save failed:', e);
+      }
+    },
+
+    defaultGenreWeights() {
+      const w = {};
+      for (const key of Object.keys(GenreData.genres)) w[key] = 0;
+      return w;
+    },
+
+    // ─── Tab Delegation ──────────────────────────────────
+    setupTabDelegation() {
+      // Event delegation on both nav containers
+      document.getElementById('tab-nav-desktop').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-tab]');
+        if (btn) this.switchTab(btn.dataset.tab);
+      });
+      document.getElementById('tab-nav-mobile').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-tab]');
+        if (btn) this.switchTab(btn.dataset.tab);
+      });
+    },
+
+    switchTab(name) {
+      this.state.activeTab = name;
+      // Hide all panels
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      // Show matching panel
+      const panel = document.getElementById('tab-' + name);
+      if (panel) panel.classList.remove('hidden');
+      // Toggle active classes on ALL tab buttons (desktop + mobile)
+      document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.classList.toggle('tab-active', btn.dataset.tab === name);
+        btn.classList.toggle('tab-inactive', btn.dataset.tab !== name);
+      });
+      // Render taste charts on tab switch
+      if (name === 'taste') {
+        setTimeout(() => this.renderTasteCharts(), 100);
+      }
+      // Re-render scored tab
+      if (name === 'scored') {
+        this.renderScoredTab();
+        this.renderLikedTab();
+        this.renderWatchTab();
+      }
+    },
+
+    // ─── Genre Sliders ────────────────────────────────────
+    renderGenreSliders() {
+      this.renderGenreGroup('main-genres', GenreData.getMainGenres());
+      this.renderGenreGroup('sub-genres', GenreData.getSubGenres());
+      this.updateActiveCount();
+      this.bindSliderEvents();
+    },
+
+    renderGenreGroup(containerId, genres) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      let html = '';
+      for (const [key, genre] of genres) {
+        const weight = this.state.genreWeights[key] ?? 0;
+        const isOn = weight > 0;
+        html += `
+          <div class="genre-slider-row ${isOn ? '' : 'genre-off'}" data-genre="${key}">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-2">
+                <span class="text-sm">${genre.icon}</span>
+                <span class="text-sm font-medium ${isOn ? 'text-zinc-200' : 'text-zinc-500 line-through'}">${genre.name}</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <span class="text-xs font-mono ${isOn ? 'text-amber-400' : 'text-red-400'} w-6 text-right" id="gv-${key}">${isOn ? weight : 'OFF'}</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only genre-switch" data-genre="${key}" ${isOn ? 'checked' : ''}>
+                  <div class="w-9 h-5 rounded-full transition-colors ${isOn ? 'bg-emerald-500' : 'bg-zinc-600'} genre-toggle" id="gt-${key}"></div>
+                </label>
+              </div>
+            </div>
+            <input type="range" min="0" max="10" step="1" value="${weight}"
+                   class="genre-range w-full h-1.5 rounded-lg appearance-none cursor-pointer ${isOn ? '' : 'opacity-30'}"
+                   id="gr-${key}" data-genre="${key}" ${isOn ? '' : 'disabled'}>
+          </div>`;
+      }
+      el.innerHTML = html;
+    },
+
+    bindSliderEvents() {
+      // Toggle switches
+      document.querySelectorAll('.genre-switch').forEach(sw => {
+        sw.addEventListener('change', (e) => {
+          const g = e.target.dataset.genre;
+          this.state.genreWeights[g] = e.target.checked ? 5 : 0;
+          this.saveState();
+          this.renderGenreSliders();
+        });
+      });
+      // Weight sliders
+      document.querySelectorAll('.genre-range').forEach(range => {
+        range.addEventListener('input', (e) => {
+          const g = e.target.dataset.genre;
+          const v = parseInt(e.target.value);
+          this.state.genreWeights[g] = v;
+          const valEl = document.getElementById('gv-' + g);
+          const toggleEl = document.getElementById('gt-' + g);
+          const row = e.target.closest('.genre-slider-row');
+          if (v === 0) {
+            valEl.textContent = 'OFF';
+            valEl.className = 'text-xs font-mono text-red-400 w-6 text-right';
+            toggleEl.className = 'w-9 h-5 rounded-full transition-colors bg-zinc-600 genre-toggle';
+            row.classList.add('genre-off');
+            e.target.classList.add('opacity-30');
+            e.target.disabled = true;
+            row.querySelector('.genre-switch').checked = false;
+          } else {
+            valEl.textContent = v;
+            valEl.className = 'text-xs font-mono text-amber-400 w-6 text-right';
+            toggleEl.className = 'w-9 h-5 rounded-full transition-colors bg-emerald-500 genre-toggle';
+            row.classList.remove('genre-off');
+            e.target.classList.remove('opacity-30');
+            e.target.disabled = false;
+            row.querySelector('.genre-switch').checked = true;
+          }
+          this.saveState();
+          this.updateActiveCount();
+        });
+      });
+    },
+
+    updateActiveCount() {
+      const el = document.getElementById('active-genre-count');
+      if (el) {
+        const count = GenreData.countActive(this.state.genreWeights);
+        el.textContent = count + ' active';
+        el.classList.toggle('text-amber-400', count > 0);
+        el.classList.toggle('text-zinc-600', count === 0);
+      }
+      const btn = document.getElementById('generate-btn');
+      if (btn) btn.disabled = count === 0;
+    },
+
+    // ─── Controls Setup ───────────────────────────────────
+    setupControls() {
+      // Year range
+      const yMin = document.getElementById('year-min');
+      const yMax = document.getElementById('year-max');
+      if (yMin) {
+        yMin.value = this.state.yearRange.min;
+        yMin.addEventListener('input', (e) => {
+          this.state.yearRange.min = parseInt(e.target.value);
+          if (this.state.yearRange.min > this.state.yearRange.max) {
+            this.state.yearRange.min = this.state.yearRange.max;
+            e.target.value = this.state.yearRange.min;
+          }
+          document.getElementById('year-min-val').textContent = this.state.yearRange.min;
+          this.saveState();
+        });
+      }
+      if (yMax) {
+        yMax.value = this.state.yearRange.max;
+        yMax.addEventListener('input', (e) => {
+          this.state.yearRange.max = parseInt(e.target.value);
+          if (this.state.yearRange.max < this.state.yearRange.min) {
+            this.state.yearRange.max = this.state.yearRange.min;
+            e.target.value = this.state.yearRange.max;
+          }
+          document.getElementById('year-max-val').textContent = this.state.yearRange.max;
+          this.saveState();
+        });
+      }
+      document.getElementById('year-min-val').textContent = this.state.yearRange.min;
+      document.getElementById('year-max-val').textContent = this.state.yearRange.max;
+
+      // Result count
+      const rc = document.getElementById('result-count');
+      if (rc) {
+        rc.value = this.state.resultCount;
+        rc.addEventListener('input', (e) => {
+          this.state.resultCount = parseInt(e.target.value);
+          document.getElementById('result-count-val').textContent = this.state.resultCount;
+          this.saveState();
+        });
+      }
+      document.getElementById('result-count-val').textContent = this.state.resultCount;
+
+      // TMDB key
+      const keyInput = document.getElementById('tmdb-key-input');
+      if (keyInput) {
+        if (this.state.tmdbKey) keyInput.value = this.state.tmdbKey;
+        keyInput.addEventListener('change', (e) => {
+          this.state.tmdbKey = e.target.value.trim();
+          this.saveState();
+        });
+      }
+
+      // Generate button
+      const genBtn = document.getElementById('generate-btn');
+      if (genBtn) genBtn.addEventListener('click', () => this.generate());
+    },
+
+    // ─── TMDB Search / Generate ───────────────────────────
+    async generate() {
+      if (this.state.isGenerating) return;
+
+      const activeCount = GenreData.countActive(this.state.genreWeights);
+      if (activeCount === 0) {
+        alert('Select at least one genre to generate results.');
+        return;
+      }
+
+      // Check TMDB key
+      if (!this.state.tmdbKey) {
+        const key = prompt('Enter your free TMDB API key:\n\nGet one at: https://www.themoviedb.org/signup\nThen go to Settings > API > Create API Key\n\nThis key is saved in your browser only.');
+        if (!key) return;
+        this.state.tmdbKey = key.trim();
+        this.saveState();
+        const keyEl = document.getElementById('tmdb-key-input');
+        if (keyEl) keyEl.value = this.state.tmdbKey;
+      }
+
+      // Show loading
+      this.state.isGenerating = true;
+      this.state.searchResults = [];
+      this.renderResults();
+
+      const container = document.getElementById('results-area');
+      container.classList.remove('hidden');
+
+      const genreIds = GenreData.getActiveTmdbGenreIds(this.state.genreWeights);
+      const keywords = GenreData.getActiveKeywords(this.state.genreWeights);
+      const yearMin = this.state.yearRange.min;
+      const yearMax = this.state.yearRange.max;
+      const count = this.state.resultCount;
+
+      // Build TMDB discover URL
+      let url = `https://api.themoviedb.org/3/discover/movie?api_key=${this.state.tmdbKey}`;
+      if (genreIds.length > 0) url += `&with_genres=${genreIds.join(',')}`;
+      url += `&primary_release_date.gte=${yearMin}-01-01&primary_release_date.lte=${yearMax}-12-31`;
+      url += `&sort_by=popularity.desc&vote_count.gte=50&include_adult=false`;
+
+      try {
+        const allResults = [];
+        const pagesNeeded = Math.ceil(count / 20);
+
+        // Fetch discover pages
+        for (let page = 1; page <= Math.min(pagesNeeded, 3); page++) {
+          const res = await fetch(url + `&page=${page}`);
+          if (!res.ok) throw new Error(`TMDB API error: ${res.status}`);
+          const data = await res.json();
+          if (data.results) allResults.push(...data.results);
+          this.state.totalResults = data.total_results || 0;
+          if (!data.results || data.results.length < 20 || allResults.length >= count) break;
+        }
+
+        // Supplement with keyword searches for sub-genres
+        if (keywords.length > 0 && allResults.length < count) {
+          for (const kw of keywords) {
+            if (allResults.length >= count * 2) break;
+            const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${this.state.tmdbKey}&query=${encodeURIComponent(kw)}&primary_release_date.gte=${yearMin}-01-01&primary_release_date.lte=${yearMax}-12-31&vote_count.gte=20&page=1`;
+            try {
+              const res = await fetch(searchUrl);
+              const data = await res.json();
+              if (data.results) {
+                const existingIds = new Set(allResults.map(m => m.id));
+                for (const movie of data.results) {
+                  if (!existingIds.has(movie.id) && allResults.length < count * 2) {
+                    allResults.push(movie);
+                    existingIds.add(movie.id);
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('Keyword search failed for:', kw, e);
+            }
+          }
+        }
+
+        // Deduplicate by ID, sort by popularity, slice
+        const seen = new Set();
+        const unique = allResults.filter(m => {
+          if (seen.has(m.id)) return false;
+          seen.add(m.id);
+          return true;
+        });
+        unique.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        this.state.searchResults = unique.slice(0, count);
+
+        // Mark scored/liked/watch status
+        this.state.searchResults = this.state.searchResults.map(m => ({
+          ...m,
+          isScored: this.state.scoredMovies.some(s => s.tmdbId === m.id),
+          savedScore: this.state.scoredMovies.find(s => s.tmdbId === m.id),
+          isLiked: this.state.likedMovies.some(l => l.tmdbId === m.id),
+          isWatch: this.state.watchMovies.some(w => w.tmdbId === m.id)
+        }));
+
+        this.renderResults();
+      } catch (err) {
+        console.error('Generate failed:', err);
+        if (err.message.includes('401')) {
+          alert('Invalid TMDB API key. Please check your key and try again.');
+          this.state.tmdbKey = '';
+          this.saveState();
+        } else {
+          alert('Search failed: ' + err.message);
+        }
+        this.renderResults();
+      }
+
+      this.state.isGenerating = false;
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    // ─── Results Rendering ────────────────────────────────
+    renderResults() {
+      const el = document.getElementById('results-grid');
+      if (!el) return;
+
+      if (this.state.isGenerating) {
+        el.innerHTML = `
+          <div class="col-span-full text-center py-16">
+            <div class="text-4xl animate-spin-slow mb-4">⏳</div>
+            <p class="text-zinc-400 text-lg">Searching TMDB for matches...</p>
+            <p class="text-zinc-600 text-sm mt-2">Looking for ${GenreData.countActive(this.state.genreWeights)} genres · ${this.state.yearRange.min}–${this.state.yearRange.max}</p>
+          </div>`;
+        return;
+      }
+
+      if (this.state.searchResults.length === 0) {
+        el.innerHTML = `
+          <div class="col-span-full text-center py-16 text-zinc-500">
+            <div class="text-4xl mb-4">🎬</div>
+            <p class="text-lg">No results yet</p>
+            <p class="text-sm mt-2">Select some genres, set your year range, and hit Generate</p>
+          </div>`;
+        return;
+      }
+
+      el.innerHTML = this.state.searchResults.map(movie => {
+        const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : '';
+        const year = movie.release_date ? movie.release_date.substring(0, 4) : '?';
+        const genres = (movie.genre_ids || []).map(id => {
+          const entry = Object.entries(GenreData.genres).find(([, g]) => g.tmdbId === id);
+          return entry ? entry[1] : null;
+        }).filter(Boolean);
+        const genreTags = genres.slice(0, 3).map(g =>
+          `<span class="inline-block px-1.5 py-0.5 text-[10px] rounded bg-zinc-700/60 text-zinc-400">${g.icon} ${g.name}</span>`
+        ).join('');
+
+        const scored = movie.isScored;
+        const savedScore = movie.savedScore;
+        const finalScore = savedScore ? ScoringEngine.calculateFinalScore(savedScore.scores).final : null;
+        const tier = finalScore !== null ? ScoringEngine.getScoreTier(finalScore) : null;
+        const isLiked = movie.isLiked;
+        const isWatch = movie.isWatch;
+
+        return `
+          <div class="movie-card group cursor-pointer" data-movie-id="${movie.id}">
+            <div class="relative overflow-hidden rounded-t-lg" onclick="App.openScoreModal(${movie.id})">
+              ${poster
+                ? `<img src="${poster}" alt="${movie.title}" class="movie-poster w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                   <div class="movie-poster-fallback hidden items-center justify-center w-full h-64"><span class="text-4xl text-zinc-600">🎬</span></div>`
+                : `<div class="flex items-center justify-center w-full h-64 movie-poster-fallback"><span class="text-4xl text-zinc-600">🎬</span></div>`}
+              ${finalScore !== null ? `
+                <div class="absolute top-2 left-2">
+                  <span class="px-2 py-1 rounded-lg text-xs font-bold" style="background:${tier.color}20; color:${tier.color}; border:1px solid ${tier.color}40">${finalScore}</span>
+                </div>` : ''}
+              ${scored ? `
+                <div class="absolute top-2 left-2 ${finalScore !== null ? 'left-20' : ''}">
+                  <span class="px-2 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Scored</span>
+                </div>` : ''}
+              <!-- Icon buttons -->
+              <div class="absolute top-2 right-2 flex flex-col gap-1.5">
+                <button onclick="event.stopPropagation(); App.toggleLike(${movie.id})"
+                        class="w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${isLiked ? 'bg-red-500/30 text-red-400 border border-red-400/40' : 'bg-black/40 text-white/70 border border-white/10 hover:bg-red-500/20 hover:text-red-400'}"
+                        title="Like">
+                  ${isLiked ? '❤️' : '🤍'}
+                </button>
+                <button onclick="event.stopPropagation(); App.toggleWatch(${movie.id})"
+                        class="w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${isWatch ? 'bg-amber-500/30 text-amber-400 border border-amber-400/40' : 'bg-black/40 text-white/70 border border-white/10 hover:bg-amber-500/20 hover:text-amber-400'}"
+                        title="Add to watchlist">
+                  ${isWatch ? '➕' : '☐'}
+                </button>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                <span class="text-xs font-medium text-amber-400 bg-black/50 px-3 py-1.5 rounded-lg border border-amber-500/30">
+                  ${scored ? 'Edit Score' : 'Score This'}
+                </span>
+              </div>
+            </div>
+            <div class="p-3" onclick="App.openScoreModal(${movie.id})">
+              <h3 class="text-sm font-semibold text-zinc-100 truncate">${movie.title}</h3>
+              <p class="text-xs text-zinc-500 mt-0.5">${year} ${movie.vote_average ? '· ' + movie.vote_average.toFixed(1) + '★' : ''}</p>
+              <div class="mt-1.5 flex flex-wrap gap-1">${genreTags}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Update result info
+      const infoEl = document.getElementById('results-info');
+      if (infoEl) {
+        infoEl.textContent = `${this.state.searchResults.length} movies found${this.state.totalResults > 0 ? ' · ' + this.state.totalResults.toLocaleString() + ' total matches' : ''}`;
+      }
+    },
+
+    // ─── Like / Watch Toggle ──────────────────────────────
+    toggleLike(tmdbId) {
+      const idx = this.state.likedMovies.findIndex(l => l.tmdbId === tmdbId);
+      if (idx >= 0) {
+        this.state.likedMovies.splice(idx, 1);
+      } else {
+        const movie = this.state.searchResults.find(m => m.id === tmdbId);
+        if (!movie) return;
+        this.state.likedMovies.push({
+          tmdbId: movie.id,
+          title: movie.title,
+          year: movie.release_date ? movie.release_date.substring(0, 4) : '?',
+          poster: movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : ''
+        });
+      }
+      this.saveState();
+      // Update search results cache
+      const sr = this.state.searchResults.find(m => m.id === tmdbId);
+      if (sr) sr.isLiked = idx < 0;
+      this.renderResults();
+      this.renderLikedTab();
+    },
+
+    toggleWatch(tmdbId) {
+      const idx = this.state.watchMovies.findIndex(w => w.tmdbId === tmdbId);
+      if (idx >= 0) {
+        this.state.watchMovies.splice(idx, 1);
+      } else {
+        const movie = this.state.searchResults.find(m => m.id === tmdbId);
+        if (!movie) return;
+        this.state.watchMovies.push({
+          tmdbId: movie.id,
+          title: movie.title,
+          year: movie.release_date ? movie.release_date.substring(0, 4) : '?',
+          poster: movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : ''
+        });
+      }
+      this.saveState();
+      const sr = this.state.searchResults.find(m => m.id === tmdbId);
+      if (sr) sr.isWatch = idx < 0;
+      this.renderResults();
+      this.renderWatchTab();
+    },
+
+    // ─── Liked Movies Tab ─────────────────────────────────
+    renderLikedTab() {
+      const el = document.getElementById('liked-grid');
+      const countEl = document.getElementById('liked-count');
+      if (!el) return;
+      countEl.textContent = this.state.likedMovies.length + ' liked';
+
+      if (this.state.likedMovies.length === 0) {
+        el.innerHTML = '<div class="col-span-full text-center py-8 text-zinc-600"><p class="text-sm">No liked movies yet. Heart movies from search results.</p></div>';
+        return;
+      }
+
+      el.innerHTML = this.state.likedMovies.map(m => `
+        <div class="movie-card group cursor-pointer">
+          <div class="relative overflow-hidden rounded-t-lg">
+            ${m.poster
+              ? `<img src="${m.poster}" class="w-full h-48 object-cover" alt="${m.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                 <div class="movie-poster-fallback hidden items-center justify-center w-full h-48"><span class="text-3xl text-zinc-600">🎬</span></div>`
+              : '<div class="flex items-center justify-center w-full h-48 movie-poster-fallback"><span class="text-3xl text-zinc-600">🎬</span></div>'}
+            <button onclick="App.toggleLike(${m.tmdbId})"
+                    class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/30 text-red-400 border border-red-400/40 flex items-center justify-center text-sm hover:bg-red-500/50 transition-all"
+                    title="Unlike">❤️</button>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold text-zinc-100 truncate">${m.title}</h3>
+            <p class="text-xs text-zinc-500 mt-0.5">${m.year}</p>
+          </div>
+        </div>
+      `).join('');
+    },
+
+    // ─── Watch Movies Tab ─────────────────────────────────
+    renderWatchTab() {
+      const el = document.getElementById('watch-grid');
+      const countEl = document.getElementById('watch-count');
+      if (!el) return;
+      countEl.textContent = this.state.watchMovies.length + ' to watch';
+
+      if (this.state.watchMovies.length === 0) {
+        el.innerHTML = '<div class="col-span-full text-center py-8 text-zinc-600"><p class="text-sm">No watchlist yet. Add movies from search results.</p></div>';
+        return;
+      }
+
+      el.innerHTML = this.state.watchMovies.map(m => `
+        <div class="movie-card group cursor-pointer">
+          <div class="relative overflow-hidden rounded-t-lg">
+            ${m.poster
+              ? `<img src="${m.poster}" class="w-full h-48 object-cover" alt="${m.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                 <div class="movie-poster-fallback hidden items-center justify-center w-full h-48"><span class="text-3xl text-zinc-600">🎬</span></div>`
+              : '<div class="flex items-center justify-center w-full h-48 movie-poster-fallback"><span class="text-3xl text-zinc-600">🎬</span></div>'}
+            <button onclick="App.toggleWatch(${m.tmdbId})"
+                    class="absolute top-2 right-2 w-8 h-8 rounded-full bg-amber-500/30 text-amber-400 border border-amber-400/40 flex items-center justify-center text-sm hover:bg-amber-500/50 transition-all"
+                    title="Remove from watchlist">➕</button>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold text-zinc-100 truncate">${m.title}</h3>
+            <p class="text-xs text-zinc-500 mt-0.5">${m.year}</p>
+          </div>
+        </div>
+      `).join('');
+    },
+
+    // ─── Score Modal ──────────────────────────────────────
+    openScoreModal(tmdbId) {
+      // Look in search results first
+      let movie = this.state.searchResults.find(m => m.id === tmdbId);
+      // If not found in results, check scoredMovies
+      if (!movie) {
+        const scored = this.state.scoredMovies.find(s => s.tmdbId === tmdbId);
+        if (scored) {
+          movie = {
+            id: scored.tmdbId,
+            title: scored.title,
+            release_date: scored.year + '-01-01',
+            poster_path: scored.poster ? scored.poster.replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/w342', '').replace('https://image.tmdb.org/t/p/w185', '') : null,
+            vote_average: scored.tmdbRating,
+            genre_ids: scored.genreIds || []
+          };
+        }
+      }
+      if (!movie) return;
+
+      const existing = this.state.scoredMovies.find(s => s.tmdbId === tmdbId);
+      const scores = existing ? existing.scores : {
+        tactileIndex: 7, systematicLogic: 7, competencePorn: 7,
+        dialogueUtility: 7, momentumVelocity: 7, industrialGrit: 7,
+        metaPenalty: 0, nihilismCap: 0
+      };
+
+      const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` : '';
+      const year = movie.release_date ? movie.release_date.substring(0, 4) : '?';
+
+      const modal = document.getElementById('score-modal');
+      const content = document.getElementById('score-modal-content');
+
+      content.innerHTML = `
+        <div class="flex gap-4 mb-6">
+          ${poster
+            ? `<img src="${poster}" class="w-24 h-36 object-cover rounded-lg shrink-0" alt="">`
+            : '<div class="w-24 h-36 bg-zinc-800 rounded-lg flex items-center justify-center shrink-0 text-2xl text-zinc-600">🎬</div>'}
+          <div class="min-w-0">
+            <h2 class="text-xl font-bold text-white leading-tight">${movie.title}</h2>
+            <p class="text-sm text-zinc-400 mt-1">${year} ${movie.vote_average ? '· TMDB ' + movie.vote_average.toFixed(1) + '/10' : ''}</p>
+            <p class="text-xs text-zinc-600 mt-1">Score each dimension 0–10, then save.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 mb-6">
+          ${this.scoreSliderRow('tactileIndex', 'Tactile Index', '×0.25', 'text-red-400', scores.tactileIndex)}
+          ${this.scoreSliderRow('systematicLogic', 'Systematic Logic', '×0.20', 'text-orange-400', scores.systematicLogic)}
+          ${this.scoreSliderRow('competencePorn', 'Competence Porn', '×0.15', 'text-yellow-400', scores.competencePorn)}
+          ${this.scoreSliderRow('dialogueUtility', 'Dialogue Utility', '×0.15', 'text-green-400', scores.dialogueUtility)}
+          ${this.scoreSliderRow('momentumVelocity', 'Momentum Velocity', '×0.15', 'text-blue-400', scores.momentumVelocity)}
+          ${this.scoreSliderRow('industrialGrit', 'Industrial Grit', '×0.10', 'text-violet-400', scores.industrialGrit)}
+
+          <div class="border-t border-zinc-700/50 pt-3 mt-3">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Modifiers</div>
+            ${this.scoreSliderRow('metaPenalty', 'Meta Penalty', 'max -5', 'text-red-400', scores.metaPenalty, 0, 5)}
+            ${this.scoreSliderRow('nihilismCap', 'Nihilism Cap', '0–100', 'text-zinc-400', scores.nihilismCap, 0, 100)}
+          </div>
+        </div>
+
+        <div id="score-live-preview" class="glass rounded-lg p-4 mb-4 text-center">
+          ${this.scorePreviewHTML(scores)}
+        </div>
+
+        <div class="flex gap-3">
+          <button onclick="App.saveScoreFromModal(${tmdbId})" class="btn-primary flex-1 py-2.5 text-sm font-semibold">
+            💾 Save Score
+          </button>
+          <button onclick="App.closeScoreModal()" class="btn-secondary flex-1 py-2.5 text-sm">
+            Cancel
+          </button>
+        </div>
+        ${existing ? `<button onclick="App.deleteScore(${tmdbId})" class="w-full mt-2 text-xs text-red-400/60 hover:text-red-400 py-1 transition-colors">Delete this score</button>` : ''}`;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Bind slider events inside modal
+      content.querySelectorAll('.modal-score-input').forEach(input => {
+        input.addEventListener('input', () => {
+          const dim = input.dataset.dim;
+          const label = content.querySelector(`.modal-score-val[data-dim="${dim}"]`);
+          if (label) label.textContent = dim === 'nihilismCap' ? input.value : parseFloat(input.value).toFixed(1);
+          const s = {};
+          content.querySelectorAll('.modal-score-input').forEach(inp => {
+            s[inp.dataset.dim] = parseFloat(inp.value) || 0;
+          });
+          document.getElementById('score-live-preview').innerHTML = this.scorePreviewHTML(s);
+        });
+      });
+    },
+
+    scoreSliderRow(dim, name, weight, colorClass, value, min = 0, max = 10) {
+      const step = dim === 'nihilismCap' ? 5 : 0.5;
+      return `
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-zinc-300">${name} <span class="text-zinc-500">(${weight})</span></span>
+            <span class="font-mono ${colorClass} modal-score-val" data-dim="${dim}">${dim === 'nihilismCap' ? value : value.toFixed(1)}</span>
+          </div>
+          <input type="range" min="${min}" max="${max}" step="${step}" value="${value}"
+                 class="modal-score-input calc-range w-full" data-dim="${dim}">
+        </div>`;
+    },
+
+    scorePreviewHTML(scores) {
+      const result = ScoringEngine.calculateFinalScore(scores);
+      const tier = ScoringEngine.getScoreTier(result.final);
+      return `
+        <div class="text-4xl font-black" style="color:${tier.color}">${result.final}</div>
+        <div class="text-xs mt-0.5" style="color:${tier.color}">${tier.label}</div>
+        <div class="text-[10px] text-zinc-500 mt-1 font-mono">Raw ${result.raw} → ${result.metaAdjusted} → ${result.nihilismCapped}</div>`;
+    },
+
+    saveScoreFromModal(tmdbId) {
+      // Find movie data
+      let movie = this.state.searchResults.find(m => m.id === tmdbId);
+      if (!movie) {
+        const scored = this.state.scoredMovies.find(s => s.tmdbId === tmdbId);
+        if (scored) {
+          movie = {
+            id: scored.tmdbId, title: scored.title,
+            release_date: scored.year + '-01-01',
+            poster_path: scored.poster ? scored.poster.replace(/^https:\/\/image\.tmdb\.org\/t\/p\/w\d+\//, '') : null,
+            vote_average: scored.tmdbRating, genre_ids: scored.genreIds || []
+          };
+        }
+      }
+      if (!movie) return;
+
+      const content = document.getElementById('score-modal-content');
+      const scores = {};
+      content.querySelectorAll('.modal-score-input').forEach(inp => {
+        scores[inp.dataset.dim] = parseFloat(inp.value) || 0;
+      });
+
+      const result = ScoringEngine.calculateFinalScore(scores);
+
+      const scoredMovie = {
+        tmdbId: movie.id,
+        title: movie.title,
+        year: movie.release_date ? movie.release_date.substring(0, 4) : '?',
+        poster: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '',
+        tmdbRating: movie.vote_average || null,
+        genreIds: movie.genre_ids || [],
+        scores,
+        finalScore: result.final,
+        savedAt: new Date().toISOString()
+      };
+
+      const idx = this.state.scoredMovies.findIndex(s => s.tmdbId === tmdbId);
+      if (idx >= 0) {
+        this.state.scoredMovies[idx] = scoredMovie;
+      } else {
+        this.state.scoredMovies.push(scoredMovie);
+      }
+
+      this.saveState();
+      this.closeScoreModal();
+      this.renderResults();
+      this.renderScoredTab();
+    },
+
+    deleteScore(tmdbId) {
+      if (!confirm('Delete this score?')) return;
+      this.state.scoredMovies = this.state.scoredMovies.filter(s => s.tmdbId !== tmdbId);
+      this.saveState();
+      this.closeScoreModal();
+      this.renderResults();
+      this.renderScoredTab();
+    },
+
+    closeScoreModal() {
+      const modal = document.getElementById('score-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    },
+
+    // ─── Scored Movies Tab ────────────────────────────────
+    renderScoredTab() {
+      const grid = document.getElementById('scored-grid');
+      const list = document.getElementById('scored-list');
+      if (!grid || !list) return;
+
+      const movies = [...this.state.scoredMovies].sort((a, b) => b.finalScore - a.finalScore);
+      const countEl = document.getElementById('scored-count');
+      if (countEl) countEl.textContent = movies.length + ' movies scored';
+
+      if (movies.length === 0) {
+        const empty = '<div class="col-span-full text-center py-12 text-zinc-500"><p class="text-sm">No scored movies yet. Generate and score some movies to see your rankings.</p></div>';
+        grid.innerHTML = empty;
+        list.innerHTML = empty;
+        return;
+      }
+
+      grid.innerHTML = movies.map(m => {
+        const tier = ScoringEngine.getScoreTier(m.finalScore);
+        return `
+          <div class="movie-card group cursor-pointer" onclick="App.openScoreModal(${m.tmdbId})">
+            <div class="relative overflow-hidden rounded-t-lg">
+              ${m.poster
+                ? `<img src="${m.poster}" class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" alt="${m.title}"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                   <div class="movie-poster-fallback hidden items-center justify-center w-full h-48"><span class="text-3xl text-zinc-600">🎬</span></div>`
+                : '<div class="flex items-center justify-center w-full h-48 movie-poster-fallback"><span class="text-3xl text-zinc-600">🎬</span></div>'}
+              <div class="absolute top-2 right-2">
+                <span class="px-2 py-1 rounded-lg text-xs font-bold" style="background:${tier.color}20; color:${tier.color}; border:1px solid ${tier.color}40">${m.finalScore}</span>
+              </div>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold text-zinc-100 truncate">${m.title}</h3>
+              <p class="text-xs text-zinc-500 mt-0.5">${m.year} · ${tier.label}</p>
+            </div>
+          </div>`;
+      }).join('');
+
+      list.innerHTML = movies.map((m, i) => {
+        const tier = ScoringEngine.getScoreTier(m.finalScore);
+        return `
+          <div class="flex items-center gap-4 p-3 bg-zinc-800/40 rounded-lg hover:bg-zinc-800/60 transition-colors cursor-pointer"
+               onclick="App.openScoreModal(${m.tmdbId})">
+            <div class="text-xs font-bold text-zinc-500 w-6 text-center shrink-0">#${i + 1}</div>
+            <div class="text-2xl font-black w-12 text-center shrink-0" style="color:${tier.color}">${m.finalScore}</div>
+            <div class="flex-1 min-w-0">
+              <h4 class="text-sm font-semibold text-zinc-200 truncate">${m.title}</h4>
+              <p class="text-xs text-zinc-500">${m.year} · ${tier.label}</p>
+            </div>
+            <button onclick="event.stopPropagation(); App.deleteScore(${m.tmdbId})" class="text-xs text-zinc-600 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-all">✕</button>
+          </div>`;
+      }).join('');
+    },
+
+    // ─── Taste Charts ─────────────────────────────────────
+    renderTasteCharts() {
+      const movies = this.state.scoredMovies;
+      const emptyEl = document.getElementById('taste-empty');
+      const chartsEl = document.getElementById('taste-charts-area');
+
+      if (movies.length === 0) {
+        emptyEl.classList.remove('hidden');
+        chartsEl.classList.add('hidden');
+        this.updateTasteSummary();
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      chartsEl.classList.remove('hidden');
+
+      this.renderTasteRadar();
+      this.renderTasteBarChart();
+      this.updateTasteSummary();
+    },
+
+    updateTasteSummary() {
+      const el = document.getElementById('taste-summary');
+      if (!el) return;
+      const movies = this.state.scoredMovies;
+      if (movies.length === 0) {
+        el.innerHTML = '<p class="text-zinc-500 text-sm">Score some movies to see your taste profile.</p>';
+        return;
+      }
+      const avg = {};
+      Object.keys(ScoringEngine.dimensions).forEach(k => {
+        avg[k] = movies.reduce((a, m) => a + (m.scores[k] || 0), 0) / movies.length;
+      });
+      avg.metaPenalty = movies.reduce((a, m) => a + (m.scores.metaPenalty || 0), 0) / movies.length;
+      avg.nihilismCap = movies.reduce((a, m) => a + (m.scores.nihilismCap || 0), 0) / movies.length;
+      const result = ScoringEngine.calculateFinalScore(avg);
+      const tier = ScoringEngine.getScoreTier(result.final);
+
+      el.innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-zinc-800/40 rounded-xl p-4 text-center">
+            <div class="text-3xl font-black" style="color:${tier.color}">${result.final}</div>
+            <div class="text-xs text-zinc-400 mt-1">Taste Score</div>
+          </div>
+          <div class="bg-zinc-800/40 rounded-xl p-4 text-center">
+            <div class="text-3xl font-black text-white">${movies.length}</div>
+            <div class="text-xs text-zinc-400 mt-1">Movies Scored</div>
+          </div>
+          <div class="bg-zinc-800/40 rounded-xl p-4 text-center">
+            <div class="text-3xl font-black text-amber-400">${tier.label}</div>
+            <div class="text-xs text-zinc-400 mt-1">Overall Tier</div>
+          </div>
+          <div class="bg-zinc-800/40 rounded-xl p-4 text-center">
+            <div class="text-3xl font-black text-emerald-400">${(movies.reduce((a, m) => a + m.finalScore, 0) / movies.length).toFixed(1)}</div>
+            <div class="text-xs text-zinc-400 mt-1">Avg Final Score</div>
+          </div>
+        </div>`;
+    },
+
+    renderTasteRadar() {
+      const canvas = document.getElementById('taste-radar');
+      if (!canvas || this.state.scoredMovies.length === 0) return;
+      const movies = this.state.scoredMovies;
+      const dimKeys = Object.keys(ScoringEngine.dimensions);
+      const avg = {};
+      dimKeys.forEach(k => { avg[k] = movies.reduce((a, m) => a + (m.scores[k] || 0), 0) / movies.length; });
+
+      if (this.charts.radar) this.charts.radar.destroy();
+      this.charts.radar = new Chart(canvas, {
+        type: 'radar',
+        data: {
+          labels: dimKeys.map(k => ScoringEngine.dimensions[k].shortName),
+          datasets: [{
+            label: 'Your Taste',
+            data: dimKeys.map(k => Math.round(avg[k] * 10) / 10),
+            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+            borderColor: '#f59e0b', borderWidth: 2,
+            pointBackgroundColor: '#f59e0b', pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true,
+          plugins: { legend: { display: false } },
+          scales: { r: {
+            beginAtZero: true, max: 10,
+            ticks: { stepSize: 2, color: '#71717a', backdropColor: 'transparent', font: { size: 10 } },
+            grid: { color: 'rgba(113,113,122,0.15)' },
+            angleLines: { color: 'rgba(113,113,122,0.15)' },
+            pointLabels: { color: '#a1a1aa', font: { size: 11, weight: '500' } }
+          }}
+        }
+      });
+    },
+
+    renderTasteBarChart() {
+      const canvas = document.getElementById('taste-bar');
+      if (!canvas || this.state.scoredMovies.length === 0) return;
+      const movies = this.state.scoredMovies;
+      const dimKeys = Object.keys(ScoringEngine.dimensions);
+      const avg = {};
+      dimKeys.forEach(k => { avg[k] = movies.reduce((a, m) => a + (m.scores[k] || 0), 0) / movies.length; });
+
+      if (this.charts.bar) this.charts.bar.destroy();
+      this.charts.bar = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: dimKeys.map(k => ScoringEngine.dimensions[k].shortName),
+          datasets: [{
+            label: 'Your Average',
+            data: dimKeys.map(k => Math.round(avg[k] * 10) / 10),
+            backgroundColor: dimKeys.map(k => ScoringEngine.dimensions[k].color + '80'),
+            borderColor: dimKeys.map(k => ScoringEngine.dimensions[k].color),
+            borderWidth: 1, borderRadius: 6, barThickness: 28
+          }, {
+            label: 'Weight (×10)',
+            data: dimKeys.map(k => ScoringEngine.dimensions[k].weight * 10),
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            borderColor: 'rgba(255,255,255,0.12)',
+            borderWidth: 1, borderRadius: 6, barThickness: 28
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true,
+          plugins: { legend: { labels: { color: '#a1a1aa', font: { size: 11 } } } },
+          scales: {
+            y: { beginAtZero: true, max: 10, ticks: { color: '#71717a' }, grid: { color: 'rgba(113,113,122,0.12)' } },
+            x: { ticks: { color: '#a1a1aa', font: { size: 10 } }, grid: { display: false } }
+          }
+        }
+      });
+    },
+
+    // ─── Calculator Tab ───────────────────────────────────
+    renderCalculatorSliders() {
+      const area = document.getElementById('calc-sliders-area');
+      if (!area) return;
+
+      const dims = Object.entries(ScoringEngine.dimensions);
+      let html = '<div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Core Dimensions</div>';
+
+      for (const [key, dim] of dims) {
+        html += `
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-zinc-300">${dim.name} <span class="text-zinc-500">(×${dim.weight.toFixed(2)})</span></span>
+              <span class="font-mono calc-val" data-dim="${key}" style="color:${dim.color}">7.0</span>
+            </div>
+            <input type="range" min="0" max="10" step="0.5" value="7" class="calc-range calc-input w-full" data-dim="${key}">
+            <div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div class="calc-bar h-full rounded-full transition-all duration-200" data-dim="${key}" style="width:70%; background:${dim.color}"></div>
+            </div>
+          </div>`;
+      }
+
+      html += `
+        <div class="border-t border-zinc-700/50 pt-4 mt-4">
+          <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Modifiers</div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-zinc-300">Meta Penalty <span class="text-zinc-500">(max -5.0)</span></span>
+              <span class="font-mono calc-val" data-dim="metaPenalty" style="color:#ef4444">0.0</span>
+            </div>
+            <input type="range" min="0" max="5" step="0.5" value="0" class="calc-range calc-input w-full" data-dim="metaPenalty">
+            <div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div class="calc-bar h-full rounded-full transition-all duration-200" data-dim="metaPenalty" style="width:0%; background:#ef4444"></div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-zinc-300">Nihilism Cap <span class="text-zinc-500">(0=none, 100=halved)</span></span>
+              <span class="font-mono calc-val" data-dim="nihilismCap" style="color:#71717a">0</span>
+            </div>
+            <input type="range" min="0" max="100" step="5" value="0" class="calc-range calc-input w-full" data-dim="nihilismCap">
+            <div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div class="calc-bar h-full rounded-full transition-all duration-200" data-dim="nihilismCap" style="width:0%; background:#71717a"></div>
+            </div>
+          </div>
+        </div>`;
+
+      area.innerHTML = html;
+
+      // Bind calculator slider events
+      area.querySelectorAll('.calc-input').forEach(input => {
+        input.addEventListener('input', () => {
+          this.updateCalculator();
+        });
+      });
+
+      // Initial calc
+      this.updateCalculator();
+    },
+
+    updateCalculator() {
+      const s = {};
+      document.querySelectorAll('.calc-input').forEach(inp => {
+        s[inp.dataset.dim] = parseFloat(inp.value) || 0;
+      });
+
+      // Update value displays
+      document.querySelectorAll('.calc-val').forEach(label => {
+        const dim = label.dataset.dim;
+        label.textContent = dim === 'nihilismCap' ? s[dim] : (s[dim] || 0).toFixed(1);
+      });
+
+      // Update progress bars
+      document.querySelectorAll('.calc-bar').forEach(bar => {
+        const dim = bar.dataset.dim;
+        const val = s[dim] || 0;
+        const dimData = ScoringEngine.dimensions[dim];
+        if (dim === 'nihilismCap') {
+          bar.style.width = val + '%';
+          bar.style.background = '#71717a';
+        } else if (dim === 'metaPenalty') {
+          bar.style.width = (val / 5 * 100) + '%';
+          bar.style.background = '#ef4444';
+        } else if (dimData) {
+          bar.style.width = (val * 10) + '%';
+          bar.style.background = dimData.color;
+        }
+      });
+
+      // Calculate and display score
+      const r = ScoringEngine.calculateFinalScore(s);
+      const t = ScoringEngine.getScoreTier(r.final);
+
+      document.getElementById('calc-score').innerHTML = `
+        <div class="text-5xl font-black" style="color:${t.color}">${r.final}</div>
+        <div class="text-sm mt-1" style="color:${t.color}">${t.label}</div>`;
+
+      document.getElementById('calc-formula').innerHTML = `
+        <div class="text-xs text-zinc-500 space-y-1 font-mono">
+          <div>Raw = ${r.raw}</div>
+          <div>− Meta (${r.metaPenalty}) = ${r.metaAdjusted}</div>
+          <div>× Nihilism (${r.nihilismFactor}) = ${r.nihilismCapped}</div>
+          <div class="text-zinc-300 font-bold">Final = ${r.final}</div>
+        </div>`;
+
+      const entries = Object.entries(ScoringEngine.dimensions);
+      document.getElementById('calc-breakdown').innerHTML = entries.map(([k, d]) => {
+        const v = s[k] || 0;
+        return `
+          <div class="flex items-center gap-2 text-xs">
+            <span class="w-20 text-zinc-400 text-right">${d.shortName}</span>
+            <span class="w-6 font-mono text-zinc-300">${v}</span>
+            <span class="text-zinc-500">×</span>
+            <span class="w-8 font-mono text-zinc-400">${d.weight}</span>
+            <span class="text-zinc-500">=</span>
+            <span class="w-8 font-mono font-bold" style="color:${d.color}">${(v * d.weight).toFixed(2)}</span>
+          </div>`;
+      }).join('');
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // BOOT
+  // ═══════════════════════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+  });
+  </script>
+</body>
+</html>
