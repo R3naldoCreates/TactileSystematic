@@ -1,0 +1,446 @@
+/* ─── Base & Reset ──────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #09090b;
+  color: #fafafa;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Background Effects ───────────────────────────────────── */
+
+.bg-base {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom right, #09090b, #18181b, #09090b);
+  z-index: -20;
+  pointer-events: none;
+}
+
+.bg-amber-glow {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at top, rgba(245, 158, 11, 0.05) 0%, transparent 60%);
+  z-index: -10;
+  pointer-events: none;
+}
+
+/* ─── Header ───────────────────────────────────────────────── */
+
+.app-header {
+  background: rgba(9, 9, 11, 0.8);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(39, 39, 42, 0.8);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.logo-text {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Tab Navigation ───────────────────────────────────────── */
+
+.tab-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.tab-active {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.tab-inactive {
+  background: transparent;
+  color: #71717a;
+  border: 1px solid transparent;
+}
+
+.tab-inactive:hover {
+  color: #a1a1aa;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+/* ─── Panels ───────────────────────────────────────────────── */
+
+.tab-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Cards ────────────────────────────────────────────────── */
+
+.movie-card {
+  background: rgba(39, 39, 42, 0.5);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.movie-card:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.1);
+  transform: translateY(-2px);
+}
+
+.liked-card {
+  transition: transform 0.2s ease;
+  border: 1px solid rgba(63, 63, 70, 0.3);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.liked-card:hover {
+  border-color: rgba(245, 158, 11, 0.2);
+  transform: scale(1.03);
+}
+
+/* ─── Sliders ──────────────────────────────────────────────── */
+
+.genre-slider-row {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.genre-slider-row:hover {
+  background: rgba(245, 158, 11, 0.03);
+}
+
+.genre-off {
+  opacity: 0.5;
+}
+
+.genre-toggle {
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.genre-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.genre-switch:checked + .genre-toggle {
+  background: #10b981 !important;
+}
+
+.genre-switch:checked + .genre-toggle::after {
+  transform: translateX(16px);
+}
+
+/* Range sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #27272a, #3f3f46);
+  outline: none;
+  transition: opacity 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f59e0b;
+  cursor: pointer;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  transition: all 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f59e0b;
+  cursor: pointer;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Calculator sliders */
+.calc-range {
+  background: linear-gradient(to right, #27272a, #3f3f46) !important;
+}
+
+.calc-range::-webkit-slider-thumb {
+  background: #f59e0b;
+  border-color: #fbbf24;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.calc-range::-moz-range-thumb {
+  background: #f59e0b;
+  border-color: #fbbf24;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+/* ─── Modal ────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: #18181b;
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 1rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(113, 113, 122, 0.3);
+  border-radius: 2px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.5);
+}
+
+/* ─── Buttons ──────────────────────────────────────────────── */
+
+.btn-primary {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(39, 39, 42, 0.5);
+  color: #a1a1aa;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid rgba(63, 63, 70, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(63, 63, 70, 0.5);
+  color: #fafafa;
+  border-color: rgba(63, 63, 70, 0.5);
+}
+
+/* Disabled generate button */
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(113, 113, 122, 0.25);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.4);
+}
+
+/* ─── Animations ───────────────────────────────────────────── */
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.08); }
+  50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.15); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ─── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .movie-poster {
+    height: 200px !important;
+  }
+  
+  .modal-content {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+}
+
+/* ─── Utility ──────────────────────────────────────────────── */
+
+.glass {
+  background: rgba(39, 39, 42, 0.5);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(16, 185, 129, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Year range display */
+.year-range-track {
+  position: relative;
+  height: 8px;
+  background: #27272a;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.year-range-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
+  border-radius: 4px;
+  transition: left 0.2s, width 0.2s;
+}
+
+/* Score input for add movie modal */
+.score-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+  transition: background 0.15s;
+}
+
+.score-input-row:hover {
+  background: rgba(245, 158, 11, 0.03);
+}
+
+/* Recommendation cards */
+.rec-card {
+  background: rgba(39, 39, 42, 0.5);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+
+.rec-card:hover {
+  border-color: rgba(245, 158, 11, 0.2);
+  background: rgba(39, 39, 42, 0.7);
+  transform: translateY(-1px);
+}
+
+/* Custom scrollbar for inner containers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(113, 113, 122, 0.3);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.5);
+}
+
+/* Movie poster fallback gradient */
+.movie-poster-fallback,
+.poster-fallback {
+  background: linear-gradient(to bottom right, #27272a, #18181b);
+}
