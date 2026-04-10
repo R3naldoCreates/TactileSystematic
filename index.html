@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tactile Systematic — Movie Taste Search</title>
+  <meta name="description" content="Select your genres, set your era, and discover movies scored by the Tactile Systematic algorithm.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+<body class="bg-zinc-950 font-sans">
+  <div class="bg-base"></div>
+  <div class="bg-amber-glow"></div>
+
+  <!-- ═══════ HEADER ═══════ -->
+  <header class="app-header relative z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 text-sm">🎬</div>
+        <div>
+          <h1 class="logo-text text-sm sm:text-base font-bold leading-tight">Tactile Systematic</h1>
+          <p class="text-[10px] text-zinc-500 font-medium tracking-wider uppercase">Movie Taste Search</p>
+        </div>
+      </div>
+      <nav class="hidden sm:flex bg-zinc-900/50 rounded-lg p-1 border border-zinc-800/50 gap-1">
+        <button data-tab="search" class="tab-btn tab-active text-xs">🎛️ Search</button>
+        <button data-tab="scored" class="tab-btn tab-inactive text-xs">💾 My Scores</button>
+        <button data-tab="taste" class="tab-btn tab-inactive text-xs">🎯 Taste</button>
+        <button data-tab="calculator" class="tab-btn tab-inactive text-xs">⚙️ Mechanic</button>
+      </nav>
+      <nav class="flex sm:hidden gap-1">
+        <button data-tab="search" class="tab-btn tab-active text-xs px-2">🎛️</button>
+        <button data-tab="scored" class="tab-btn tab-inactive text-xs px-2">💾</button>
+        <button data-tab="taste" class="tab-btn tab-inactive text-xs px-2">🎯</button>
+        <button data-tab="calculator" class="tab-btn tab-inactive text-xs px-2">⚙️</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══════ MAIN ═══════ -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 relative z-10">
+
+    <!-- ───────────── SEARCH TAB ───────────── -->
+    <div id="tab-search" class="tab-panel">
+
+      <!-- Genre Sliders Panel -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Main Genres -->
+        <div class="glass rounded-xl p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Main Genres</h2>
+            <span class="text-xs text-zinc-600">Toggle ON to include</span>
+          </div>
+          <div id="main-genres" class="space-y-0.5"></div>
+        </div>
+        <!-- Sub-Genres -->
+        <div class="glass rounded-xl p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Sub-Genres</h2>
+            <span class="text-xs text-zinc-600">Narrow your search</span>
+          </div>
+          <div id="sub-genres" class="space-y-0.5"></div>
+        </div>
+      </div>
+
+      <!-- Controls Row -->
+      <div class="glass rounded-xl p-4 sm:p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+
+          <!-- Year Range -->
+          <div class="md:col-span-1">
+            <label class="text-xs text-zinc-400 font-medium uppercase tracking-wider block mb-2">Year Range</label>
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-zinc-500">From</span>
+                  <span id="year-min-val" class="font-mono text-amber-400">1970</span>
+                </div>
+                <input type="range" id="year-min" min="1920" max="2026" value="1970" class="w-full">
+              </div>
+              <span class="text-zinc-600 text-xs">→</span>
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-zinc-500">To</span>
+                  <span id="year-max-val" class="font-mono text-amber-400">2026</span>
+                </div>
+                <input type="range" id="year-max" min="1920" max="2026" value="2026" class="w-full">
+              </div>
+            </div>
+          </div>
+
+          <!-- Result Count -->
+          <div>
+            <label class="text-xs text-zinc-400 font-medium uppercase tracking-wider block mb-2">How Many Results</label>
+            <div class="flex items-center gap-3">
+              <input type="range" id="result-count" min="1" max="30" value="12" class="flex-1">
+              <span id="result-count-val" class="text-lg font-bold text-amber-400 font-mono w-8 text-center">12</span>
+            </div>
+          </div>
+
+          <!-- TMDB Key + Generate -->
+          <div class="space-y-2">
+            <input type="text" id="tmdb-key-input" placeholder="TMDB API Key (saved locally)"
+                   class="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 transition-all">
+            <button id="generate-btn" class="w-full py-3 bg-gradient-to-r from-amber-600/20 to-amber-500/20 text-amber-400 border border-amber-500/30 hover:from-amber-600/30 hover:to-amber-500/30 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2">
+              <span class="text-lg">🔍</span> Generate
+            </button>
+            <p class="text-center">
+              <span class="text-xs text-zinc-600" id="active-genre-count">0 active</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Area -->
+      <div id="results-area" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-zinc-100">Search Results</h2>
+          <span class="text-xs text-zinc-500" id="results-info"></span>
+        </div>
+        <div id="results-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────── MY SCORES TAB ───────────── -->
+    <div id="tab-scored" class="tab-panel hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-zinc-100">💾 My Scored Movies</h2>
+        <span class="text-xs text-zinc-500" id="scored-count">0 movies scored</span>
+      </div>
+
+      <!-- Grid view -->
+      <div id="scored-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+      </div>
+
+      <!-- List view -->
+      <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-3">Rankings</h3>
+      <div id="scored-list" class="space-y-2">
+      </div>
+    </div>
+
+    <!-- ───────────── TASTE TAB ───────────── -->
+    <div id="tab-taste" class="tab-panel hidden">
+      <div id="taste-summary" class="mb-6"></div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="glass rounded-xl p-4 sm:p-6">
+          <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">🕸️ Taste Radar</h3>
+          <div class="max-w-sm mx-auto"><canvas id="taste-radar"></canvas></div>
+        </div>
+        <div class="glass rounded-xl p-4 sm:p-6">
+          <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">📊 Dimension Breakdown</h3>
+          <canvas id="taste-bar"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────── CALCULATOR TAB ───────────── -->
+    <div id="tab-calculator" class="tab-panel hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass rounded-xl p-4 sm:p-6">
+          <h3 class="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-2">⚙️ Score Calculator</h3>
+          <p class="text-xs text-zinc-500 mb-6">Drag sliders to see how each dimension contributes to the final score.</p>
+          <div class="space-y-4 mb-6">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Core Dimensions</div>
+            <div><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Tactile Index <span class="text-zinc-500">(×0.25)</span></span><span class="font-mono text-red-400 cv" data-dim="tactileIndex">7.0</span></div><input type="range" min="0" max="10" step="0.5" value="7" class="ci calc-range w-full" data-dim="tactileIndex"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="tactileIndex" style="width:70%; background:#ef4444"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Systematic Logic <span class="text-zinc-500">(×0.20)</span></span><span class="font-mono text-orange-400 cv" data-dim="systematicLogic">7.0</span></div><input type="range" min="0" max="10" step="0.5" value="7" class="ci calc-range w-full" data-dim="systematicLogic"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="systematicLogic" style="width:70%; background:#f97316"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Competence Porn <span class="text-zinc-500">(×0.15)</span></span><span class="font-mono text-yellow-400 cv" data-dim="competencePorn">7.0</span></div><input type="range" min="0" max="10" step="0.5" value="7" class="ci calc-range w-full" data-dim="competencePorn"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="competencePorn" style="width:70%; background:#eab308"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Dialogue Utility <span class="text-zinc-500">(×0.15)</span></span><span class="font-mono text-green-400 cv" data-dim="dialogueUtility">7.0</span></div><input type="range" min="0" max="10" step="0.5" value="7" class="ci calc-range w-full" data-dim="dialogueUtility"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="dialogueUtility" style="width:70%; background:#22c55e"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Momentum Velocity <span class="text-zinc-500">(×0.15)</span></span><span class="font-mono text-blue-400 cv" data-dim="momentumVelocity">7.0</span></div><input type="range" min="0" max="10" step="0.5" value="7" class="ci calc-range w-full" data-dim="momentumVelocity"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="momentumVelocity" style="width:70%; background:#3b82f6"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Industrial Grit <span class="text-zinc-500">(×0.10)</span></span><span class="font-mono text-violet-400 cv" data-dim="industrialGrit">7.0</span></div><input type="range" min="0" max="10" step="0.5" value="7" class="ci calc-range w-full" data-dim="industrialGrit"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="industrialGrit" style="width:70%; background:#8b5cf6"></div></div></div>
+            <div class="border-t border-zinc-700/50 pt-4 mt-4">
+              <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Modifiers</div>
+              <div><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Meta Penalty <span class="text-zinc-500">(max -5.0)</span></span><span class="font-mono text-red-400 cv" data-dim="metaPenalty">0.0</span></div><input type="range" min="0" max="5" step="0.5" value="0" class="ci calc-range w-full" data-dim="metaPenalty"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="metaPenalty" style="width:0%; background:#ef4444"></div></div></div>
+              <div class="mt-3"><div class="flex justify-between text-xs mb-1"><span class="text-zinc-300">Nihilism Cap <span class="text-zinc-500">(0=none, 100=halved)</span></span><span class="font-mono text-zinc-400 cv" data-dim="nihilismCap">0</span></div><input type="range" min="0" max="100" step="5" value="0" class="ci calc-range w-full" data-dim="nihilismCap"><div class="mt-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="cb h-full rounded-full transition-all duration-200" data-dim="nihilismCap" style="width:0%; background:#71717a"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-4">
+          <div class="rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-zinc-800/50 p-4 sm:p-6 text-center animate-pulse-glow">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Final Score</div>
+            <div id="calc-score"></div>
+          </div>
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Formula</div>
+            <div id="calc-formula"></div>
+          </div>
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Contributions</div>
+            <div id="calc-breakdown" class="space-y-1.5"></div>
+          </div>
+          <div class="glass rounded-xl p-4 sm:p-6">
+            <div class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Algorithm</div>
+            <div class="text-xs text-zinc-400 space-y-2">
+              <p>The <strong class="text-zinc-200">Tactile Systematic</strong> algorithm evaluates films across 6 weighted dimensions, then applies 2 modifiers:</p>
+              <div class="bg-zinc-900/50 rounded-lg p-3 font-mono text-[11px] text-zinc-300 leading-relaxed">
+                <div>Raw = Σ(dim × weight)</div>
+                <div>Adjusted = Raw − min(Meta, 5)</div>
+                <div>Final = Adjusted × max(1−NC/100, 0.5)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════ SCORE MODAL ═══════ -->
+  <div id="score-modal" class="modal-overlay hidden" onclick="if(event.target===this)App.closeScoreModal()">
+    <div class="modal-content w-full max-w-lg p-4 sm:p-6">
+      <div class="flex justify-between items-start mb-2">
+        <h2 class="text-sm font-semibold text-zinc-500 uppercase tracking-wider">Score Movie</h2>
+        <button onclick="App.closeScoreModal()" class="text-zinc-400 hover:text-white text-xl transition-colors">✕</button>
+      </div>
+      <div id="score-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="relative z-10 border-t border-zinc-800/50 mt-12 bg-zinc-950/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center">
+      <p class="text-xs text-zinc-600">Tactile Systematic Reviews — Genre slider search powered by TMDB · All data saved locally in your browser</p>
+    </div>
+  </footer>
+
+  <!-- ═══════ SCRIPTS ═══════ -->
+  <script src="js/scoring.js"></script>
+  <script src="js/data.js"></script>
+  <script>
+    // Calculator binding
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.ci').forEach(input => {
+        input.addEventListener('input', () => {
+          const dim = input.dataset.dim;
+          const label = document.querySelector(`.cv[data-dim="${dim}"]`);
+          if (label) label.textContent = dim === 'nihilismCap' ? input.value : parseFloat(input.value).toFixed(1);
+          // Gather all scores
+          const s = {};
+          document.querySelectorAll('.ci').forEach(inp => { s[inp.dataset.dim] = parseFloat(inp.value) || 0; });
+          const r = ScoringEngine.calculateFinalScore(s);
+          const t = ScoringEngine.getScoreTier(r.final);
+          document.getElementById('calc-score').innerHTML = `<div class="text-5xl font-black" style="color:${t.color}">${r.final}</div><div class="text-sm mt-1" style="color:${t.color}">${t.label}</div>`;
+          document.getElementById('calc-formula').innerHTML = `<div class="text-xs text-zinc-500 space-y-1 font-mono"><div>Raw = ${r.raw}</div><div>− Meta (${r.metaPenalty}) = ${r.metaAdjusted}</div><div>× Nihilism (${r.nihilismFactor}) = ${r.nihilismCapped}</div><div class="text-zinc-300 font-bold">Final = ${r.final}</div></div>`;
+          const entries = Object.entries(ScoringEngine.dimensions);
+          document.getElementById('calc-breakdown').innerHTML = entries.map(([k, d]) => {
+            const v = s[k] || 0;
+            return `<div class="flex items-center gap-2 text-xs"><span class="w-20 text-zinc-400 text-right">${d.shortName}</span><span class="w-6 font-mono text-zinc-300">${v}</span><span class="text-zinc-500">×</span><span class="w-8 font-mono text-zinc-400">${d.weight}</span><span class="text-zinc-500">=</span><span class="w-8 font-mono font-bold" style="color:${d.color}">${(v*d.weight).toFixed(2)}</span></div>`;
+          }).join('');
+          document.querySelectorAll('.cb').forEach(bar => {
+            const bdim = bar.dataset.dim;
+            const bval = s[bdim] || 0;
+            const ddata = ScoringEngine.dimensions[bdim];
+            bar.style.width = (bdim === 'nihilismCap' ? bval : bval * 10) + '%';
+            bar.style.background = ddata ? ddata.color : '#f59e0b';
+          });
+        });
+      });
+      // Trigger initial calc
+      document.querySelector('.ci')?.dispatchEvent(new Event('input'));
+    });
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>
